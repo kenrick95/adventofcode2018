@@ -2,7 +2,7 @@ use std::io;
 
 // https://repl.it/@kenrick95/Aoc2018Day2Part2
 
-fn main() {
+pub fn main() {
     let mut inputs = Vec::new();
     loop {
         let mut input = String::new();

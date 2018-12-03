@@ -2,7 +2,7 @@ use std::io;
 use std::collections::HashMap;
 // https://repl.it/@kenrick95/Aoc2018Day1
 
-fn main() {
+pub fn main() {
     let mut val = 0;
     let mut count = HashMap::new();
     let mut inputs = Vec::new();
