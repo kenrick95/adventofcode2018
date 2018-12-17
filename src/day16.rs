@@ -3,19 +3,26 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::io;
 
-// impl<'r> PartialEq for fn((usize, usize, usize, usize), &'r Vec<usize>) -> Vec<usize> {
+// impl<'r, 's> PartialEq for fn(&'r Instructions, &'s Vec<usize>) -> Vec<usize> {
 //   fn eq<F>(&self, other: &F) -> bool
 //   where
-//     F: Fn((usize, usize, usize, usize), &Vec<usize>) -> Vec<usize>,
+//     F: Fn(Instructions, &Vec<usize>) -> Vec<usize>,
 //   {
 //     self as usize == other as usize
 //   }
 // }
 
+struct Instructions(
+  /* opcode */ usize,
+  /* A */ usize,
+  /* B */ usize,
+  /* C: output */ usize,
+);
+
 struct Case {
   registers_before: Vec<usize>,
   registers_after: Vec<usize>,
-  instructions: (usize, usize, usize, usize),
+  instructions: Instructions,
 }
 
 fn read_stdin() -> String {
@@ -33,10 +40,8 @@ fn parse_numbers(caps: regex::Captures) -> Vec<usize> {
   return result;
 }
 
-fn get_possible_functions(
-  case: &Case,
-) -> Vec<fn((usize, usize, usize, usize), &Vec<usize>) -> Vec<usize>> {
-  let functions: Vec<fn((usize, usize, usize, usize), &Vec<usize>) -> Vec<usize>> = vec![
+fn get_possible_functions(case: &Case) -> Vec<fn(&Instructions, &Vec<usize>) -> Vec<usize>> {
+  let functions: Vec<fn(&Instructions, &Vec<usize>) -> Vec<usize>> = vec![
     do_addr, do_addi, do_mulr, do_muli, do_banr, do_bani, do_borr, do_bori, do_setr, do_seti,
     do_gtir, do_gtri, do_gtrr, do_eqir, do_eqri, do_eqrr,
   ];
@@ -53,171 +58,83 @@ fn get_possible_functions(
 
 fn check_case<F>(case: &Case, operation: F) -> bool
 where
-  F: Fn((usize, usize, usize, usize), &Vec<usize>) -> Vec<usize>,
+  F: Fn(&Instructions, &Vec<usize>) -> Vec<usize>,
 {
-  return operation(case.instructions, &case.registers_before) == case.registers_after;
+  return operation(&case.instructions, &case.registers_before) == case.registers_after;
 }
 
 // Add register: reg[C] <- reg[A] + reg[B]
-fn do_addr(
-  instructions: (
-    /* opcode */ usize,
-    /* A */ usize,
-    /* B */ usize,
-    /* C: output */ usize,
-  ),
-  registers: &Vec<usize>,
-) -> Vec<usize> {
+fn do_addr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] + registers[instructions.2];
   return result;
 }
 
 // Add immediate: reg[C] <- reg[A] + B
-fn do_addi(
-  instructions: (
-    /* opcode */ usize,
-    /* A */ usize,
-    /* B */ usize,
-    /* C: output */ usize,
-  ),
-  registers: &Vec<usize>,
-) -> Vec<usize> {
+fn do_addi(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] + instructions.2;
   return result;
 }
 
 // Multiply register: reg[C] <- reg[A] * reg[B]
-fn do_mulr(
-  instructions: (
-    /* opcode */ usize,
-    /* A */ usize,
-    /* B */ usize,
-    /* C: output */ usize,
-  ),
-  registers: &Vec<usize>,
-) -> Vec<usize> {
+fn do_mulr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] * registers[instructions.2];
   return result;
 }
 
 // Multiply immediate: reg[C] <- reg[A] * B
-fn do_muli(
-  instructions: (
-    /* opcode */ usize,
-    /* A */ usize,
-    /* B */ usize,
-    /* C: output */ usize,
-  ),
-  registers: &Vec<usize>,
-) -> Vec<usize> {
+fn do_muli(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] * instructions.2;
   return result;
 }
 
 // Bitwise AND register: reg[C] <- reg[A] & reg[B]
-fn do_banr(
-  instructions: (
-    /* opcode */ usize,
-    /* A */ usize,
-    /* B */ usize,
-    /* C: output */ usize,
-  ),
-  registers: &Vec<usize>,
-) -> Vec<usize> {
+fn do_banr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] & registers[instructions.2];
   return result;
 }
 
 // Bitwise AND immediate: reg[C] <- reg[A]  & B
-fn do_bani(
-  instructions: (
-    /* opcode */ usize,
-    /* A */ usize,
-    /* B */ usize,
-    /* C: output */ usize,
-  ),
-  registers: &Vec<usize>,
-) -> Vec<usize> {
+fn do_bani(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] & instructions.2;
   return result;
 }
 
 // Bitwise OR register: reg[C] <- reg[A] | reg[B]
-fn do_borr(
-  instructions: (
-    /* opcode */ usize,
-    /* A */ usize,
-    /* B */ usize,
-    /* C: output */ usize,
-  ),
-  registers: &Vec<usize>,
-) -> Vec<usize> {
+fn do_borr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] | registers[instructions.2];
   return result;
 }
 
 // Bitwise OR immediate: reg[C] <- reg[A] | B
-fn do_bori(
-  instructions: (
-    /* opcode */ usize,
-    /* A */ usize,
-    /* B */ usize,
-    /* C: output */ usize,
-  ),
-  registers: &Vec<usize>,
-) -> Vec<usize> {
+fn do_bori(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] | instructions.2;
   return result;
 }
 
 // Set register: reg[C] <- reg[A]
-fn do_setr(
-  instructions: (
-    /* opcode */ usize,
-    /* A */ usize,
-    /* B */ usize,
-    /* C: output */ usize,
-  ),
-  registers: &Vec<usize>,
-) -> Vec<usize> {
+fn do_setr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1];
   return result;
 }
 
 // Set immediate: reg[C] <- A
-fn do_seti(
-  instructions: (
-    /* opcode */ usize,
-    /* A */ usize,
-    /* B */ usize,
-    /* C: output */ usize,
-  ),
-  registers: &Vec<usize>,
-) -> Vec<usize> {
+fn do_seti(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = instructions.1;
   return result;
 }
 
 // greater-than immediate/register: reg[C] <- A > reg[B] ? 1 : 0
-fn do_gtir(
-  instructions: (
-    /* opcode */ usize,
-    /* A */ usize,
-    /* B */ usize,
-    /* C: output */ usize,
-  ),
-  registers: &Vec<usize>,
-) -> Vec<usize> {
+fn do_gtir(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if instructions.1 > registers[instructions.2] {
     result[instructions.3] = 1;
@@ -228,15 +145,7 @@ fn do_gtir(
 }
 
 // greater-than register/immediate: reg[C] <- reg[A] > B ? 1 : 0
-fn do_gtri(
-  instructions: (
-    /* opcode */ usize,
-    /* A */ usize,
-    /* B */ usize,
-    /* C: output */ usize,
-  ),
-  registers: &Vec<usize>,
-) -> Vec<usize> {
+fn do_gtri(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if registers[instructions.1] > instructions.2 {
     result[instructions.3] = 1;
@@ -247,15 +156,7 @@ fn do_gtri(
 }
 
 // greater-than register/register: reg[C] <- reg[A] > reg[B] ? 1 : 0
-fn do_gtrr(
-  instructions: (
-    /* opcode */ usize,
-    /* A */ usize,
-    /* B */ usize,
-    /* C: output */ usize,
-  ),
-  registers: &Vec<usize>,
-) -> Vec<usize> {
+fn do_gtrr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if registers[instructions.1] > registers[instructions.2] {
     result[instructions.3] = 1;
@@ -266,15 +167,7 @@ fn do_gtrr(
 }
 
 // equal immediate/register: reg[C] <- A > reg[B] ? 1 : 0
-fn do_eqir(
-  instructions: (
-    /* opcode */ usize,
-    /* A */ usize,
-    /* B */ usize,
-    /* C: output */ usize,
-  ),
-  registers: &Vec<usize>,
-) -> Vec<usize> {
+fn do_eqir(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if instructions.1 == registers[instructions.2] {
     result[instructions.3] = 1;
@@ -285,15 +178,7 @@ fn do_eqir(
 }
 
 // equal register/immediate: reg[C] <- reg[A] > B ? 1 : 0
-fn do_eqri(
-  instructions: (
-    /* opcode */ usize,
-    /* A */ usize,
-    /* B */ usize,
-    /* C: output */ usize,
-  ),
-  registers: &Vec<usize>,
-) -> Vec<usize> {
+fn do_eqri(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if registers[instructions.1] == instructions.2 {
     result[instructions.3] = 1;
@@ -304,15 +189,7 @@ fn do_eqri(
 }
 
 // equal register/register: reg[C] <- reg[A] > reg[B] ? 1 : 0
-fn do_eqrr(
-  instructions: (
-    /* opcode */ usize,
-    /* A */ usize,
-    /* B */ usize,
-    /* C: output */ usize,
-  ),
-  registers: &Vec<usize>,
-) -> Vec<usize> {
+fn do_eqrr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if registers[instructions.1] == registers[instructions.2] {
     result[instructions.3] = 1;
@@ -326,10 +203,8 @@ pub fn main() {
   let re_reg_before = Regex::new(r"^Before:\s+\[(\d+), (\d+), (\d+), (\d+)\]$").unwrap();
   let re_reg_after = Regex::new(r"^After:\s+\[(\d+), (\d+), (\d+), (\d+)\]$").unwrap();
   let re_reg_instructions = Regex::new(r"^(\d+) (\d+) (\d+) (\d+)$").unwrap();
-  let mut opcode_fn_mapping: HashMap<
-    usize,
-    Vec<fn((usize, usize, usize, usize), &Vec<usize>) -> Vec<usize>>,
-  > = HashMap::new();
+  let mut opcode_fn_mapping: HashMap<usize, Vec<fn(&Instructions, &Vec<usize>) -> Vec<usize>>> =
+    HashMap::new();
 
   let mut cases = Vec::new();
 
@@ -360,7 +235,7 @@ pub fn main() {
     cases.push(Case {
       registers_before,
       registers_after,
-      instructions: (
+      instructions: Instructions(
         instructions[0],
         instructions[1],
         instructions[2],
@@ -386,7 +261,7 @@ pub fn main() {
       // let mut intersections = vec![];
       // {
       //   for func in current_possible_functions {
-      //     if possible_functions.contains(*func) { // <-- This has error since PartialEq can't work without impl; but with impl it said said it has conflicting implementation
+      //     if possible_functions.contains(&*func) { // <-- This has error since PartialEq can't work without impl; but with impl it said said it has conflicting implementation
       //       intersections.push(*func);
       //     }
       //   }
