@@ -3,11 +3,12 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::io;
 
-struct Instructions(
-  /* opcode */ usize,
-  /* A */ usize,
-  /* B */ usize,
-  /* C: output */ usize,
+#[derive(Debug)]
+pub struct Instructions(
+  pub /* opcode */ usize,
+  pub /* A */ usize,
+  pub /* B */ usize,
+  pub /* C: output */ usize,
 );
 
 struct Case {
@@ -72,77 +73,77 @@ where
 }
 
 // Add register: reg[C] <- reg[A] + reg[B]
-fn do_addr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_addr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] + registers[instructions.2];
   return result;
 }
 
 // Add immediate: reg[C] <- reg[A] + B
-fn do_addi(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_addi(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] + instructions.2;
   return result;
 }
 
 // Multiply register: reg[C] <- reg[A] * reg[B]
-fn do_mulr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_mulr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] * registers[instructions.2];
   return result;
 }
 
 // Multiply immediate: reg[C] <- reg[A] * B
-fn do_muli(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_muli(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] * instructions.2;
   return result;
 }
 
 // Bitwise AND register: reg[C] <- reg[A] & reg[B]
-fn do_banr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_banr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] & registers[instructions.2];
   return result;
 }
 
 // Bitwise AND immediate: reg[C] <- reg[A]  & B
-fn do_bani(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_bani(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] & instructions.2;
   return result;
 }
 
 // Bitwise OR register: reg[C] <- reg[A] | reg[B]
-fn do_borr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_borr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] | registers[instructions.2];
   return result;
 }
 
 // Bitwise OR immediate: reg[C] <- reg[A] | B
-fn do_bori(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_bori(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] | instructions.2;
   return result;
 }
 
 // Set register: reg[C] <- reg[A]
-fn do_setr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_setr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1];
   return result;
 }
 
 // Set immediate: reg[C] <- A
-fn do_seti(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_seti(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = instructions.1;
   return result;
 }
 
 // greater-than immediate/register: reg[C] <- A > reg[B] ? 1 : 0
-fn do_gtir(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_gtir(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if instructions.1 > registers[instructions.2] {
     result[instructions.3] = 1;
@@ -153,7 +154,7 @@ fn do_gtir(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
 }
 
 // greater-than register/immediate: reg[C] <- reg[A] > B ? 1 : 0
-fn do_gtri(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_gtri(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if registers[instructions.1] > instructions.2 {
     result[instructions.3] = 1;
@@ -164,7 +165,7 @@ fn do_gtri(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
 }
 
 // greater-than register/register: reg[C] <- reg[A] > reg[B] ? 1 : 0
-fn do_gtrr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_gtrr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if registers[instructions.1] > registers[instructions.2] {
     result[instructions.3] = 1;
@@ -175,7 +176,7 @@ fn do_gtrr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
 }
 
 // equal immediate/register: reg[C] <- A > reg[B] ? 1 : 0
-fn do_eqir(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_eqir(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if instructions.1 == registers[instructions.2] {
     result[instructions.3] = 1;
@@ -185,8 +186,8 @@ fn do_eqir(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   return result;
 }
 
-// equal register/immediate: reg[C] <- reg[A] > B ? 1 : 0
-fn do_eqri(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+// equal register/immediate: reg[C] <- reg[A] == B ? 1 : 0
+pub fn do_eqri(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if registers[instructions.1] == instructions.2 {
     result[instructions.3] = 1;
@@ -196,8 +197,8 @@ fn do_eqri(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   return result;
 }
 
-// equal register/register: reg[C] <- reg[A] > reg[B] ? 1 : 0
-fn do_eqrr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+// equal register/register: reg[C] <- reg[A] == reg[B] ? 1 : 0
+pub fn do_eqrr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if registers[instructions.1] == registers[instructions.2] {
     result[instructions.3] = 1;
