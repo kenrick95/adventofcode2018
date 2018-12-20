@@ -11,6 +11,11 @@ fn read_stdin() -> String {
     return String::from(input.trim());
 }
 
+// NOTE: On both parts, I have deassembled the input program on paper and figured out the answer using calculator and Wolfram Alpha
+// Line 2-11 is a function takes in input at reg[1] and outputs at reg[0]; reg[0] <- sum_of_factors(reg[1])
+// Exit is at Line 16; reg[0] initial value acts as a jump to Line 17-26 (Part 1 input) or Line 17-35 (Part 2 input)
+// Part 1: sum_of_factors(943) = 1008
+// Part 2: sum_of_factors(110534976) = 11534976
 pub fn main() {
     let re_ip = Regex::new(r"^\#ip (\d+)$").unwrap();
     let re_instruction = Regex::new(r"^([a-z]+) (\d+) (\d+) (\d+)$").unwrap();
