@@ -1,5 +1,6 @@
 use regex::Regex;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::io;
 
 #[path = "./day16.rs"]
@@ -80,6 +81,11 @@ pub fn main() {
     }
 
     let mut t = 0;
+    let mut x = 0;
+    let mut answers = HashSet::new();
+    let mut last = 0;
+    // NOTE: Day 21 uses this program ...
+    let compute_day_21 = true;
 
     // Part 1 program
     loop {
@@ -99,14 +105,36 @@ pub fn main() {
         }
         registers[pc_reg_index] = pc;
 
-        println!("[{}] {}, {:?}, {:?}", t, pc, instruction, registers);
+        // println!("[{}] {}, {:?}, {:?}", t, pc, instruction, registers);
         t += 1;
 
-        // ._. TODO: Solution not working, need to disassemble the input, might as well create a new file to solve it...
-        if t > 1000 {
-            break;
+        if compute_day_21 && pc == 29 {
+            // when pc == 29, program will exit if reg[0] == reg[1]
+            // For Day 21, the task is to find this value
+            // println!("x {} {:?}", x, registers[1]);
+            let value = registers[1];
+            if x == 0 {
+                println!("Day 21 Part 1: {}", value);
+            }
+            // if x % 1000 == 0 {
+            //     println!("x {} {:?}", x, value);
+            // }
+            if answers.contains(&value) {
+                break;
+            }
+            last = value;
+            answers.insert(value);
+            x += 1;
         }
-    }
 
-    println!("Part 1: {}", registers[0]);
+        // // ._. TODO: Solution not working, need to disassemble the input, might as well create a new file to solve it...
+        // if t > 1000 {
+        //     break;
+        // }
+    }
+    if compute_day_21 {
+        println!("Day 21 Part 2: {:?}", last);
+    } else {
+        println!("Part 1: {}", registers[0]);
+    }
 }
