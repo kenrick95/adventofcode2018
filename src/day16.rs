@@ -1,22 +1,14 @@
 use regex::Regex;
-// use std::cmp::PartialEq;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::io;
 
-// impl<'r, 's> PartialEq for fn(&'r Instructions, &'s Vec<usize>) -> Vec<usize> {
-//   fn eq<F>(&self, other: &F) -> bool
-//   where
-//     F: Fn(Instructions, &Vec<usize>) -> Vec<usize>,
-//   {
-//     self as usize == other as usize
-//   }
-// }
-
-struct Instructions(
-  /* opcode */ usize,
-  /* A */ usize,
-  /* B */ usize,
-  /* C: output */ usize,
+#[derive(Debug)]
+pub struct Instructions(
+  pub /* opcode */ usize,
+  pub /* A */ usize,
+  pub /* B */ usize,
+  pub /* C: output */ usize,
 );
 
 struct Case {
@@ -40,16 +32,33 @@ fn parse_numbers(caps: regex::Captures) -> Vec<usize> {
   return result;
 }
 
-fn get_possible_functions(case: &Case) -> Vec<fn(&Instructions, &Vec<usize>) -> Vec<usize>> {
-  let functions: Vec<fn(&Instructions, &Vec<usize>) -> Vec<usize>> = vec![
-    do_addr, do_addi, do_mulr, do_muli, do_banr, do_bani, do_borr, do_bori, do_setr, do_seti,
-    do_gtir, do_gtri, do_gtrr, do_eqir, do_eqri, do_eqrr,
+fn get_possible_functions(
+  case: &Case,
+) -> Vec<(String, fn(&Instructions, &Vec<usize>) -> Vec<usize>)> {
+  let functions: Vec<(String, fn(&Instructions, &Vec<usize>) -> Vec<usize>)> = vec![
+    (String::from("addr"), do_addr),
+    (String::from("addi"), do_addi),
+    (String::from("mulr"), do_mulr),
+    (String::from("muli"), do_muli),
+    (String::from("banr"), do_banr),
+    (String::from("bani"), do_bani),
+    (String::from("borr"), do_borr),
+    (String::from("bori"), do_bori),
+    (String::from("setr"), do_setr),
+    (String::from("seti"), do_seti),
+    (String::from("gtir"), do_gtir),
+    (String::from("gtri"), do_gtri),
+    (String::from("gtrr"), do_gtrr),
+    (String::from("eqir"), do_eqir),
+    (String::from("eqri"), do_eqri),
+    (String::from("eqrr"), do_eqrr),
   ];
   let mut possible_functions = vec![];
 
-  for function in functions {
+  for item in functions {
+    let (name, function) = item;
     if check_case(case, function) {
-      possible_functions.push(function);
+      possible_functions.push((name, function));
     }
   }
 
@@ -64,77 +73,77 @@ where
 }
 
 // Add register: reg[C] <- reg[A] + reg[B]
-fn do_addr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_addr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] + registers[instructions.2];
   return result;
 }
 
 // Add immediate: reg[C] <- reg[A] + B
-fn do_addi(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_addi(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] + instructions.2;
   return result;
 }
 
 // Multiply register: reg[C] <- reg[A] * reg[B]
-fn do_mulr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_mulr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] * registers[instructions.2];
   return result;
 }
 
 // Multiply immediate: reg[C] <- reg[A] * B
-fn do_muli(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_muli(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] * instructions.2;
   return result;
 }
 
 // Bitwise AND register: reg[C] <- reg[A] & reg[B]
-fn do_banr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_banr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] & registers[instructions.2];
   return result;
 }
 
 // Bitwise AND immediate: reg[C] <- reg[A]  & B
-fn do_bani(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_bani(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] & instructions.2;
   return result;
 }
 
 // Bitwise OR register: reg[C] <- reg[A] | reg[B]
-fn do_borr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_borr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] | registers[instructions.2];
   return result;
 }
 
 // Bitwise OR immediate: reg[C] <- reg[A] | B
-fn do_bori(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_bori(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1] | instructions.2;
   return result;
 }
 
 // Set register: reg[C] <- reg[A]
-fn do_setr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_setr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = registers[instructions.1];
   return result;
 }
 
 // Set immediate: reg[C] <- A
-fn do_seti(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_seti(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   result[instructions.3] = instructions.1;
   return result;
 }
 
 // greater-than immediate/register: reg[C] <- A > reg[B] ? 1 : 0
-fn do_gtir(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_gtir(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if instructions.1 > registers[instructions.2] {
     result[instructions.3] = 1;
@@ -145,7 +154,7 @@ fn do_gtir(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
 }
 
 // greater-than register/immediate: reg[C] <- reg[A] > B ? 1 : 0
-fn do_gtri(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_gtri(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if registers[instructions.1] > instructions.2 {
     result[instructions.3] = 1;
@@ -156,7 +165,7 @@ fn do_gtri(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
 }
 
 // greater-than register/register: reg[C] <- reg[A] > reg[B] ? 1 : 0
-fn do_gtrr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_gtrr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if registers[instructions.1] > registers[instructions.2] {
     result[instructions.3] = 1;
@@ -167,7 +176,7 @@ fn do_gtrr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
 }
 
 // equal immediate/register: reg[C] <- A > reg[B] ? 1 : 0
-fn do_eqir(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+pub fn do_eqir(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if instructions.1 == registers[instructions.2] {
     result[instructions.3] = 1;
@@ -177,8 +186,8 @@ fn do_eqir(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   return result;
 }
 
-// equal register/immediate: reg[C] <- reg[A] > B ? 1 : 0
-fn do_eqri(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+// equal register/immediate: reg[C] <- reg[A] == B ? 1 : 0
+pub fn do_eqri(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if registers[instructions.1] == instructions.2 {
     result[instructions.3] = 1;
@@ -188,8 +197,8 @@ fn do_eqri(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   return result;
 }
 
-// equal register/register: reg[C] <- reg[A] > reg[B] ? 1 : 0
-fn do_eqrr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
+// equal register/register: reg[C] <- reg[A] == reg[B] ? 1 : 0
+pub fn do_eqrr(instructions: &Instructions, registers: &Vec<usize>) -> Vec<usize> {
   let mut result = registers.clone();
   if registers[instructions.1] == registers[instructions.2] {
     result[instructions.3] = 1;
@@ -203,8 +212,10 @@ pub fn main() {
   let re_reg_before = Regex::new(r"^Before:\s+\[(\d+), (\d+), (\d+), (\d+)\]$").unwrap();
   let re_reg_after = Regex::new(r"^After:\s+\[(\d+), (\d+), (\d+), (\d+)\]$").unwrap();
   let re_reg_instructions = Regex::new(r"^(\d+) (\d+) (\d+) (\d+)$").unwrap();
-  let mut opcode_fn_mapping: HashMap<usize, Vec<fn(&Instructions, &Vec<usize>) -> Vec<usize>>> =
-    HashMap::new();
+  let mut opcode_fn_mapping: HashMap<
+    usize,
+    Vec<(String, fn(&Instructions, &Vec<usize>) -> Vec<usize>)>,
+  > = HashMap::new();
 
   let mut cases = Vec::new();
 
@@ -257,20 +268,110 @@ pub fn main() {
       let current_possible_functions = opcode_fn_mapping
         .get(&opcode)
         .unwrap_or(&possible_functions);
-      // TODO: Do intersection of current_possible_functions and possible_functions
-      // let mut intersections = vec![];
-      // {
-      //   for func in current_possible_functions {
-      //     if possible_functions.contains(&*func) { // <-- This has error since PartialEq can't work without impl; but with impl it said said it has conflicting implementation
-      //       intersections.push(*func);
-      //     }
-      //   }
-      // }
-      // opcode_fn_mapping.insert(opcode, intersections);
+      let mut intersections = vec![];
+      {
+        for item in current_possible_functions {
+          let (c_name, _c_function) = item;
+          if possible_functions.iter().any(|p_item| {
+            let (p_name, _p_function) = p_item;
+            return p_name == c_name;
+          }) {
+            intersections.push(item.clone());
+          }
+        }
+      }
+      opcode_fn_mapping.insert(opcode, intersections);
     }
 
     println!("Part 1: {:?}", p1_count);
   }
+
+  // Initially ...
+  // opcode 11 --> ["eqrr"]
+  // opcode 10 --> ["addr", "addi", "seti"]
+  // opcode 1 --> ["banr", "bani", "seti", "gtir", "gtri", "gtrr", "eqir", "eqri", "eqrr"]
+  // opcode 3 --> ["eqri", "eqrr"]
+  // opcode 8 --> ["addr", "seti"]
+  // opcode 4 --> ["banr", "bani", "gtir", "gtri", "gtrr", "eqir", "eqri", "eqrr"]
+  // opcode 5 --> ["muli", "banr", "bani", "bori", "setr", "eqir", "eqri"]
+  // opcode 13 --> ["eqir", "eqri", "eqrr"]
+  // opcode 7 --> ["gtri", "eqir", "eqrr"]
+  // opcode 2 --> ["addr", "addi", "mulr", "muli", "banr", "bani", "borr", "bori", "setr", "seti", "gtir", "gtri", "gtrr"]
+  // opcode 12 --> ["gtir", "gtri", "gtrr", "eqir", "eqri", "eqrr"]
+  // opcode 9 --> ["muli", "banr", "bani", "gtir", "gtrr", "eqir", "eqri", "eqrr"]
+  // opcode 15 --> ["gtri", "gtrr", "eqir", "eqri"]
+  // opcode 0 --> ["addr", "borr", "bori", "setr", "gtrr"]
+  // opcode 6 --> ["bani", "gtir", "gtri", "gtrr", "eqir", "eqri", "eqrr"]
+  // opcode 14 --> ["setr", "gtir"]
+  {
+    // Resolve all the possibilities ... Remove functions that we're certain from other places, then check certainy again
+    let mut certain_opcodes: HashSet<usize> = HashSet::new();
+    for (k, v) in opcode_fn_mapping.iter() {
+      let t: Vec<String> = v.iter().map(|i| (i.clone()).0).collect();
+      println!("opcode {:?} --> {:?}", k, t);
+      if t.len() == 1 {
+        // This number is associated with 1 function, we're certain
+        certain_opcodes.insert(*k);
+      }
+    }
+    let mut i = 0;
+    loop {
+      let mut certain_fn_names: HashSet<String> = HashSet::new();
+      certain_opcodes.iter().for_each(|op| {
+        opcode_fn_mapping.get(&op).unwrap().iter().for_each(|item| {
+          let (name, _fn) = item;
+          certain_fn_names.insert(name.to_string());
+        });
+      });
+
+      for (_k, v) in opcode_fn_mapping.iter_mut() {
+        let mut left: Vec<(String, fn(&Instructions, &Vec<usize>) -> Vec<usize>)> = vec![];
+        if v.len() == 1 {
+          continue;
+        }
+        for x in v.iter() {
+          let (name, func) = x.clone();
+          if !certain_fn_names.contains(&name) {
+            left.push((name, func));
+          }
+        }
+        *v = left;
+      }
+
+      let mut all_ok = true;
+      for (k, v) in opcode_fn_mapping.iter() {
+        let t: Vec<String> = v.iter().map(|j| (j.clone()).0).collect();
+        println!("[{}] opcode {:?} --> {:?}", i, k, t);
+
+        if t.len() == 1 {
+          certain_opcodes.insert(*k);
+        } else {
+          all_ok = false;
+        }
+      }
+      if all_ok {
+        break;
+      }
+      i += 1;
+    }
+  }
+  // This results in something like:
+  // [10] opcode 11 --> ["eqrr"]
+  // [10] opcode 10 --> ["addi"]
+  // [10] opcode 1 --> ["seti"]
+  // [10] opcode 3 --> ["eqri"]
+  // [10] opcode 8 --> ["addr"]
+  // [10] opcode 4 --> ["banr"]
+  // [10] opcode 5 --> ["bori"]
+  // [10] opcode 13 --> ["eqir"]
+  // [10] opcode 7 --> ["gtri"]
+  // [10] opcode 2 --> ["mulr"]
+  // [10] opcode 12 --> ["gtir"]
+  // [10] opcode 9 --> ["muli"]
+  // [10] opcode 15 --> ["gtrr"]
+  // [10] opcode 0 --> ["borr"]
+  // [10] opcode 6 --> ["bani"]
+  // [10] opcode 14 --> ["setr"]
 
   // Part 2; WIP
   {
@@ -288,15 +389,21 @@ pub fn main() {
 
       let caps_instructions = re_reg_instructions.captures(input.as_str()).unwrap();
       let instructions_vec = parse_numbers(caps_instructions);
-      let instructions = (
+      let instructions = Instructions(
         instructions_vec[0],
         instructions_vec[1],
         instructions_vec[2],
         instructions_vec[3],
       );
       // Get opcode from instructions
+      let opcode = instructions.0;
       // Get function from opcode
+      let possible_fns = opcode_fn_mapping.get(&opcode).unwrap();
+      let (_instruction_fn_name, instruction_fn) = (possible_fns[0]).clone();
       // Run function
+      let new_registers = instruction_fn(&instructions, &p2_registers);
+      p2_registers = new_registers;
     }
+    println!("Part 2: {:?}", p2_registers);
   }
 }
