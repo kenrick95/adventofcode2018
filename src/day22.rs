@@ -5,14 +5,14 @@ use std::collections::HashMap;
 #[derive(Debug, Hash, Copy, Clone, Eq, PartialEq)]
 struct Point(/* y */ usize, /* x */ usize);
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Hash, Debug, Copy, Clone, PartialEq)]
 enum Type {
   Rocky,
   Wet,
   Narrow,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Hash, Debug, Copy, Clone, Eq, PartialEq)]
 enum Tool {
   Torch,
   Gear,
@@ -26,6 +26,7 @@ struct State {
   tool: Tool,
 }
 
+// Rust's BinaryHeap is max-heap. This is sample code from rust doc to make it min-heap
 impl Ord for State {
   fn cmp(&self, other: &State) -> Ordering {
     other
@@ -97,12 +98,14 @@ fn generate_map(start: &Point, end: &Point, target: &Point, depth: usize) -> Vec
 }
 
 pub fn main() {
-  let depth = 9465;
-  let target = Point(704, 13);
-  // let depth = 510;
-  // let target = Point(10, 10);
+  // let depth = 9465;
+  // let target = Point(704, 13);
+  let depth = 510;
+  let target = Point(10, 10);
   let start = Point(0, 0);
-  let map = generate_map(&start, &target, &target, depth);
+
+  // Note: Need to generate map larger than start..target
+  let map = generate_map(&start, &Point(target.0 * 2, target.1 * 2), &target, depth);
   // println!("Map: {:?}", map);
   {
     let mut answer = 0;
@@ -123,54 +126,40 @@ pub fn main() {
 
   // Part 2 is Dijsktra's algorithm, a harder version of it. so exciting.println!
   {
-    // Note: the exploration map can go much further than the rectangle in part 1
-
-    let map = generate_map(&start, &Point(target.0 * 2, target.1 * 2), &target, depth);
-    // Priority queue, cost: time
+    // Priority queue, cost: time, state: position + tool --> I used only "position" as the state and that causes wrong answer ._.
     let mut pq: BinaryHeap<State> = BinaryHeap::new();
     pq.push(State {
       position: start,
       cost: 0,
       tool: Tool::Torch,
     });
-    let mut dist: HashMap<Point, usize> = HashMap::new();
-    let mut dist_tool: HashMap<Point, Vec<Tool>> = HashMap::new();
-    dist.insert(start, 0);
-    dist_tool.insert(start, vec![Tool::Torch]);
+    let mut dist: HashMap<(Point, Tool), usize> = HashMap::new();
+    dist.insert((start, Tool::Torch), 0);
     let deltas: Vec<(i32, i32)> = vec![(0, 1), (0, -1), (1, 0), (-1, 0)];
 
-    // pop top
-    // for adj in all adjacent nodes
-    //   for tool in all tools in adj
-    //     push to pq: (adj, time + 1 + switch tool ? 7 : 0)
     while let Some(State {
       cost,
       position,
       tool,
     }) = pq.pop()
     {
-      println!(
-        "state {:?} {:?} {:?} {:?}",
-        position,
-        cost,
-        tool,
-        dist.get(&position)
-      );
-      // if position == target {
-      //   println!("target reached, breaking");
-      //   break;
-      // }
-      if cost > *dist.get(&position).unwrap_or(&core::usize::MAX) {
-        println!("cost > dist");
+      // println!(
+      //   "state {:?} {:?} {:?} {:?}",
+      //   position,
+      //   cost,
+      //   tool,
+      //   dist.get(&(position, tool))
+      // );
+      if position == target && tool == Tool::Torch {
+        // println!("target reached, breaking");
+        break;
+      }
+      if cost > *dist.get(&(position, tool)).unwrap_or(&core::usize::MAX) {
+        // println!("cost > dist");
         continue;
       }
-      let point_type = map[position.0][position.1];
 
-      let tools_allowed = match point_type {
-        Type::Rocky => vec![Tool::Torch, Tool::Gear],
-        Type::Wet => vec![Tool::None, Tool::Gear],
-        Type::Narrow => vec![Tool::Torch, Tool::None],
-      };
+      // Move to other cell
       for delta in deltas.iter() {
         let new_pos = (position.0 as i32 + delta.0, position.1 as i32 + delta.1);
         if new_pos.0 < 0
@@ -182,73 +171,53 @@ pub fn main() {
         }
         let new_point = Point(new_pos.0 as usize, new_pos.1 as usize);
         let new_point_type = map[new_point.0 as usize][new_point.1];
-
-        // NOTE: When entering, need to use a tool in "tools_allowed", but but, it also need to be allowed at current point!
         let new_point_tools_allowed = match new_point_type {
           Type::Rocky => vec![Tool::Torch, Tool::Gear],
           Type::Wet => vec![Tool::None, Tool::Gear],
           Type::Narrow => vec![Tool::Torch, Tool::None],
         };
 
-        // Get the intersection between the two
-        let mut new_tools: Vec<Tool> = vec![];
-        for new_point_tool in new_point_tools_allowed.iter() {
-          if tools_allowed.contains(&*new_point_tool) {
-            new_tools.push(*new_point_tool);
-          }
-        }
+        if new_point_tools_allowed.contains(&tool) {
+          let new_cost = cost + 1;
+          let next_best_dist = *dist.get(&(new_point, tool)).unwrap_or(&core::usize::MAX);
 
-        let new_point_best_dist = *dist.get(&new_point).unwrap_or(&core::usize::MAX);
-        // if new_point == Point(12, 10) {
-        //   println!(">>>> here new_tools {:?} {:?} {:?}", new_tools, new_point_type, new_point_best_dist);
-        // }
-
-        for new_tool in new_tools.iter() {
-          let mut  new_cost;
-          let mut final_tool = *new_tool;
-          // Gotcha: if new point is target, tools allowed is only torch, but allow to change at the very end
-          
-          if final_tool == tool {
-            new_cost = cost + 1;
-            if new_point == target && final_tool != Tool::Torch {
-              final_tool = Tool::Torch;
-              new_cost = cost + 8;
-            }
-          } else {
-            new_cost = cost + 8;
-          }
-          
-          if new_cost < new_point_best_dist {
+          if new_cost < next_best_dist {
             pq.push(State {
               position: new_point,
               cost: new_cost,
-              tool: final_tool,
+              tool: tool,
             });
-            dist.insert(new_point, new_cost);
-            dist_tool.insert(new_point, vec![final_tool]);
-          } else if new_cost == new_point_best_dist {
-            let mut new_point_best_tools = dist_tool
-              .get(&new_point)
-              .unwrap_or(&vec![final_tool])
-              .clone();
-            if (*new_point_best_tools).contains(new_tool) {
-              continue;
-            } else {
-
-              pq.push(State {
-                position: new_point,
-                cost: new_cost,
-                tool: final_tool,
-              });
-              new_point_best_tools.push(final_tool);
-              dist_tool.insert(new_point, new_point_best_tools);
-            }
+            dist.insert((new_point, tool), new_cost);
           }
+        }
+      }
+
+      // Change tool
+      let point_type = map[position.0][position.1];
+
+      let tools_allowed = match point_type {
+        Type::Rocky => vec![Tool::Torch, Tool::Gear],
+        Type::Wet => vec![Tool::None, Tool::Gear],
+        Type::Narrow => vec![Tool::Torch, Tool::None],
+      };
+      for new_tool in tools_allowed.iter() {
+        let new_cost = cost + 7;
+        let next_best_dist = *dist
+          .get(&(position, *new_tool))
+          .unwrap_or(&core::usize::MAX);
+
+        if new_cost < next_best_dist {
+          pq.push(State {
+            position: position,
+            cost: new_cost,
+            tool: *new_tool,
+          });
+          dist.insert((position, *new_tool), new_cost);
         }
       }
     }
 
-    // 970 is too high; 959 is too high; 957 is also too high... something is wrong, need time to debug ...
-    println!("Part 2: {:?}", dist.get(&target));
+    // 970 is too high; 959 is too high; 957 is also too high... something is wrong, need time to debug ... 944 is correct yay!
+    println!("Part 2: {:?}", dist.get(&(target, Tool::Torch)));
   }
 }
