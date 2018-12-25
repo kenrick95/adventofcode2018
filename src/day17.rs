@@ -27,6 +27,16 @@ impl fmt::Display for State {
         )
     }
 }
+impl State {
+    fn as_str(&self) -> &str {
+        match self {
+            State::None => ".",
+            State::Cell => "#",
+            State::Water => "~",
+            State::WaterSource => "W",
+        }
+    }
+}
 
 fn read_inputs() -> Vec<String> {
     let all_inputs = String::from(
@@ -41,10 +51,23 @@ fn read_inputs() -> Vec<String> {
     return inputs;
 }
 
-fn print_map(map: &Vec<Vec<State>>, min_i: usize, min_j: usize, max_i: usize, max_j: usize) {
+fn print_map(
+    map: &Vec<Vec<State>>,
+    min_i: usize,
+    min_j: usize,
+    max_i: usize,
+    max_j: usize,
+    head_i: usize,
+    head_j: usize,
+) {
     for i in min_i..(max_i + 1) {
         for j in min_j..(max_j + 1) {
-            print!("{}", map[i][j]);
+            if i == head_i && j == head_j {
+                print!("X");
+            } else {
+                print!("{}", map[i][j]);
+            }
+            
         }
         println!();
     }
@@ -59,6 +82,13 @@ pub fn main() {
         tmp.resize(MAP_SIZE, State::None);
         map.resize(MAP_SIZE, tmp);
     }
+    let mut vis: Vec<Vec<bool>> = vec![];
+    {
+        let mut tmp = Vec::new();
+        tmp.resize(MAP_SIZE, false);
+        vis.resize(MAP_SIZE, tmp);
+    }
+
     let mut min_i = MAP_SIZE;
     let mut min_j = MAP_SIZE;
     let mut max_i = 0;
@@ -106,22 +136,24 @@ pub fn main() {
         let head = (0, 500);
         queue.push_back(head);
         while let Some(head) = queue.pop_front() {
-            println!("> {:?} {:?}", head, map[head.0][head.1]);
+            println!(
+                "> {:?} {:?} {:?}",
+                head, map[head.0][head.1], vis[head.0][head.1]
+            );
             if head.0 > max_i {
                 break;
             }
-
-            let next = (head.0 + 1, head.1);
-
-            if map[next.0][next.1] == State::Water {
+            if vis[head.0][head.1] {
                 continue;
             }
+            vis[head.0][head.1] = true;
 
+            let next = (head.0 + 1, head.1);
 
             if map[next.0][next.1] == State::None {
                 map[next.0][next.1] = State::Water;
                 queue.push_back(next);
-            } else if map[next.0][next.1] == State::Cell {
+            } else if vec![State::Cell, State::Water].contains(&map[next.0][next.1]) {
                 let mut need_to_back_up = true;
                 let mut di = 0;
                 while need_to_back_up {
@@ -135,17 +167,19 @@ pub fn main() {
                             && map[next_left.0][next_left.1] == State::Cell
                         {
                             map[head_left.0][head_left.1] = State::Water;
-                        } else if di > 0
-                            && vec![State::None, State::Water]
-                                .contains(&map[head_left.0][head_left.1])
+                            vis[head_left.0][head_left.1] = true;
+                        } else if vec![State::None, State::Water]
+                            .contains(&map[head_left.0][head_left.1])
                             && map[next_left.0][next_left.1] == State::Water
                         {
                             map[head_left.0][head_left.1] = State::Water;
+                            vis[head_left.0][head_left.1] = true;
                         } else if vec![State::None, State::Water]
                             .contains(&map[head_left.0][head_left.1])
                             && map[next_left.0][next_left.1] == State::None
                         {
                             map[head_left.0][head_left.1] = State::Water;
+                            vis[head_left.0][head_left.1] = true;
                             map[next_left.0][next_left.1] = State::Water;
                             queue.push_back(next_left);
                             need_to_back_up = false;
@@ -165,17 +199,19 @@ pub fn main() {
                             && map[next_right.0][next_right.1] == State::Cell
                         {
                             map[head_right.0][head_right.1] = State::Water;
-                        } else if di > 0
-                            && vec![State::None, State::Water]
-                                .contains(&map[head_right.0][head_right.1])
+                            vis[head_right.0][head_right.1] = true;
+                        } else if vec![State::None, State::Water]
+                            .contains(&map[head_right.0][head_right.1])
                             && map[next_right.0][next_right.1] == State::Water
                         {
                             map[head_right.0][head_right.1] = State::Water;
+                            vis[head_right.0][head_right.1] = true;
                         } else if vec![State::None, State::Water]
                             .contains(&map[head_right.0][head_right.1])
                             && map[next_right.0][next_right.1] == State::None
                         {
                             map[head_right.0][head_right.1] = State::Water;
+                            vis[head_right.0][head_right.1] = true;
                             map[next_right.0][next_right.1] = State::Water;
                             queue.push_back(next_right);
                             need_to_back_up = false;
@@ -187,8 +223,16 @@ pub fn main() {
 
                     di += 1;
                 }
+
+                for ddi in 0..di {
+                    let head_up = (head.0 - ddi, head.1);
+                    if map[head_up.0][head_up.1] == State::None {
+                        map[head_up.0][head_up.1] = State::Water;
+                        vis[head_up.0][head_up.1] = true;
+                    }
+                }
             }
-            print_map(&map, min_i, min_j, max_i, max_j);
+            print_map(&map, min_i, min_j, max_i, max_j, head.0, head.1);
         }
     }
 
@@ -201,8 +245,8 @@ pub fn main() {
                 }
             }
         }
-        print_map(&map, min_i, min_j, max_i, max_j);
-        // TODO: 1265 is too low
+        print_map(&map, min_i, min_j, max_i, max_j, MAP_SIZE, MAP_SIZE);
+        // TODO: 1265 is too low; 1272 is too low
         println!("Part 1: {}", answer);
     }
 }
